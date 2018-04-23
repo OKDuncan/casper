@@ -305,8 +305,6 @@ def mk_validation_code_impure_sstore():
             b'<<ADDRESS>>',
             address
         )
-        print(address)
-        print(bytecode)
         return bytecode
     return mk_validation_code_impure_sstore
 
