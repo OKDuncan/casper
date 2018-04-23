@@ -96,3 +96,12 @@ def test_deposit_fails_with_sstore_in_sig_validator(casper, funded_privkey,
         validator_index = deposit_validator_impure_sstore(funded_privkey,
                                                       deposit_amount)
 
+
+def test_deposit_fails_with_sload_in_sig_validator(casper, funded_privkey,
+                                             deposit_amount,
+                                             deposit_validator_impure_sload):
+    withdrawal_addr = utils.privtoaddr(funded_privkey)
+
+    with pytest.raises(TransactionFailed):
+        validator_index = deposit_validator_impure_sload(funded_privkey,
+                                                      deposit_amount)

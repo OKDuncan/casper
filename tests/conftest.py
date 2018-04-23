@@ -310,6 +310,31 @@ def mk_validation_code_impure_sstore():
 
 
 @pytest.fixture
+def mk_validation_code_impure_sload():
+    def mk_validation_code_impure_sload(address):
+        """
+        validation_code = '''
+        ~sload(0)
+        ~calldatacopy(0, 0, 128)
+        ~call(3000, 1, 0, 0, 128, 0, 32)
+        return(~mload(0) == {})
+        '''.format(utils.checksum_encode(address))
+        return serpent.compile(validation_code)
+        """
+        # The precompiled bytecode of the validation code which
+        # verifies EC signatures (as an impure function)
+        bytecode = b'a\x00=\x80a\x00\x0e`\x009a\x00KV`\x00TP`\x80`\x00`\x007`'
+        bytecode += b' `\x00`\x80`\x00`\x00`\x01a\x0b\xb8\xf1Ps'
+        bytecode += b'<<ADDRESS>>`\x00Q\x14` R` ` \xf3[`\x00\xf3'
+        bytecode = bytecode.replace(
+            b'<<ADDRESS>>',
+            address
+        )
+        return bytecode
+    return mk_validation_code_impure_sload
+
+
+@pytest.fixture
 def mk_vote():
     def mk_vote(validator_index, target_hash, target_epoch, source_epoch, privkey):
         sighash = utils.sha3(
@@ -398,6 +423,20 @@ def validation_addr_impure_sstore(casper_chain, casper,
 
 
 @pytest.fixture
+def validation_addr_impure_sload(casper_chain, casper,
+                                  mk_validation_code_impure_sload):
+    def validation_addr_impure_sload(privkey):
+        addr = utils.privtoaddr(privkey)
+        return casper_chain.tx(
+            privkey,
+            "",
+            0,
+            mk_validation_code_impure_sload(addr)
+        )
+    return validation_addr_impure_sload
+
+
+@pytest.fixture
 def deposit_validator(casper_chain, casper, validation_addr):
     def deposit_validator(privkey, value):
         addr = utils.privtoaddr(privkey)
@@ -416,6 +455,17 @@ def deposit_validator_impure_sstore(
         casper.deposit(valcode_addr, addr, value=value)
         return casper.validator_indexes(addr)
     return deposit_validator_impure_sstore
+
+
+@pytest.fixture
+def deposit_validator_impure_sload(
+    casper_chain, casper, validation_addr_impure_sload):
+    def deposit_validator_impure_sload(privkey, value):
+        addr = utils.privtoaddr(privkey)
+        valcode_addr = validation_addr_impure_sload(privkey)
+        casper.deposit(valcode_addr, addr, value=value)
+        return casper.validator_indexes(addr)
+    return deposit_validator_impure_sload
 
 
 # deposits privkey, value and steps forward two epochs
