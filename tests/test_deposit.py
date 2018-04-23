@@ -1,4 +1,6 @@
 from ethereum import utils
+from ethereum.tools.tester import TransactionFailed
+import pytest
 
 
 def test_deposit_sets_withdrawal_addr(casper, funded_privkey, deposit_amount,
@@ -72,4 +74,15 @@ def test_deposit_updates_total_deposits(casper, funded_privkey, deposit_amount,
     assert casper.total_prevdyn_deposits_scaled() == deposit_amount
 
 
+def test_deposit_fails_if_already_deposited(casper, funded_privkey, deposit_amount,
+                                        deposit_validator):
+    scale_factor = casper.deposit_scale_factor(casper.current_epoch())
+    expected_scaled_deposit = deposit_amount / scale_factor
+    validator_index = deposit_validator(funded_privkey, deposit_amount)
+
+    # Assert the first deposit worked
+    assert casper.validators__deposit(validator_index) == expected_scaled_deposit
+    # Attempt a second deposit
+    with pytest.raises(TransactionFailed):
+        validator_index_2 = deposit_validator(funded_privkey, deposit_amount)
 
